@@ -1,0 +1,54 @@
+[workspace]
+resolver = "2"
+members  = ["contracts/*"]
+
+[workspace.package]
+edition     = "2021"
+repository  = "https://github.com/public-awesome/stardex-contracts"
+description = "A set of contracts and libraries for the Stardex protocol."
+authors     = ["Tasio tasiovictoria@ujulabs.com"]
+license     = "BUSL-1.1"
+
+[workspace.dependencies]
+anyhow = "1.0.51"
+cosmwasm-schema = "2.1.1"
+cosmwasm-std = { version = "2.1.1", features = [
+    "staking",
+    "stargate",
+    "cosmwasm_1_2",
+] }
+cw2 = "2.0.0"
+cw721 = "0.18.0"
+cw-address-like = "2.0.0"
+cw-controllers = "2.0.0"
+cw-multi-test = { version = "2.1.1", features = [
+    "staking",
+    "stargate",
+    "cosmwasm_1_2",
+] }
+cw-storage-macro = "2.0.0"
+cw-storage-plus = "2.0.0"
+cw-utils = "2.0.0"
+schemars = "0.8.21"
+serde = { version = "1.0.204", default-features = false, features = ["derive"] }
+sha2 = "0.10"
+sylvia = "1.2.1"
+thiserror = "1.0.63"
+uju-cw2-common = { path = "../uju-cw/packages/uju-cw2-common" }
+uju-cw2-nft = { path = "../uju-cw/packages/uju-cw2-nft" }
+uju-index-query = { path = "../uju-cw/packages/uju-index-query" }
+
+passage-nft-vault = { path = "./contracts/passage-nft-vault", features = [
+    "library",
+] }
+passage-stake-rewards = { path = "./contracts/passage-stake-rewards", features = [
+    "library",
+] }
+
+[profile.release]
+rpath            = false
+lto              = true
+overflow-checks  = true
+opt-level        = 3
+debug            = false
+debug-assertions = false
