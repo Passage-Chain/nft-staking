@@ -6,11 +6,11 @@ repository = { workspace = true }
 license    = { workspace = true }
 
 [dependencies]
-anyhow                = { workspace = true }
-cosmwasm-std          = { workspace = true }
-passage-nft-vault     = { workspace = true }
-passage-stake-rewards = { workspace = true }
-uju-cw2-common        = { workspace = true }
+anyhow         = { workspace = true }
+cosmwasm-std   = { workspace = true }
+nft-vault      = { workspace = true }
+stake-rewards  = { workspace = true }
+uju-cw2-common = { workspace = true }
 
 
 [dev-dependencies]

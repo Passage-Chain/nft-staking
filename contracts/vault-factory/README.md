@@ -1,8 +1,8 @@
-# PassageVaultFactory Smart Contract
+# VaultFactory Smart Contract
 
 ## Overview
 
-PassageVaultFactory is a CosmWasm smart contract that facilitates the creation and management of NFT stake vaults. It allows administrators to create new vaults with specific configurations and keeps track of all created vaults.
+VaultFactory is a CosmWasm smart contract that facilitates the creation and management of NFT stake vaults. It allows administrators to create new vaults with specific configurations and keeps track of all created vaults.
 
 ## Key Features
 
@@ -12,7 +12,7 @@ PassageVaultFactory is a CosmWasm smart contract that facilitates the creation a
 
 ## Contract Structure
 
-The main struct `PassageVaultFactory` contains:
+The main struct `VaultFactory` contains:
 
 - `config`: Stores global configuration settings.
 - `vaults`: A map to keep track of created vaults.
@@ -68,4 +68,4 @@ The contract emits events for important actions:
 - Contract Name: Defined in `CARGO_PKG_NAME`
 - Contract Version: Defined in `CARGO_PKG_VERSION`
 
-This README provides an overview of the PassageVaultFactory smart contract, highlighting its main features and functionality. For detailed implementation and usage, refer to the contract source code.
+This README provides an overview of the VaultFactory smart contract, highlighting its main features and functionality. For detailed implementation and usage, refer to the contract source code.

@@ -4,7 +4,7 @@ use cosmwasm_std::{
 use cw2::set_contract_version;
 use cw_storage_plus::{IndexedMap, Item, Map, MultiIndex, SnapshotItem, Strategy};
 use cw_utils::maybe_addr;
-use passage_stake_rewards::contract::sv::{
+use stake_rewards::contract::sv::{
     ExecMsg as PassageRewardsExecuteMsg, InstantiateMsg as StakeRewardsInstantiateMsg,
 };
 use std::cmp::min;

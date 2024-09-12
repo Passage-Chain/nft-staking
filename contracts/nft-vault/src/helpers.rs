@@ -1,5 +1,5 @@
 use cosmwasm_std::{to_json_binary, Addr, SubMsg, Uint128, WasmMsg};
-use passage_stake_rewards::contract::sv::ExecMsg as PassageRewardsExecuteMsg;
+use stake_rewards::contract::sv::ExecMsg as PassageRewardsExecuteMsg;
 
 use crate::error::ContractError;
 

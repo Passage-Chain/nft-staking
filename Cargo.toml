@@ -38,12 +38,8 @@ uju-cw2-common = { version = "0.2.0" }
 uju-cw2-nft = { version = "0.1.0" }
 uju-index-query = { version = "0.1.0" }
 
-passage-nft-vault = { path = "./contracts/passage-nft-vault", features = [
-    "library",
-] }
-passage-stake-rewards = { path = "./contracts/passage-stake-rewards", features = [
-    "library",
-] }
+nft-vault     = { path = "./contracts/nft-vault", features = ["library"] }
+stake-rewards = { path = "./contracts/stake-rewards", features = ["library"] }
 
 [profile.release]
 rpath            = false

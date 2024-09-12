@@ -1,8 +1,8 @@
 [package]
-name        = "passage-stake-rewards"
+name        = "vault-factory"
 authors     = ["Tasio Victoria <tasiovictoria@ujulabs.com>"]
 edition     = "2018"
-description = "Distributes staking rewards."
+description = "Contract for staking native tokens"
 version     = "0.1.0"
 license     = { workspace = true }
 repository  = { workspace = true }
@@ -17,10 +17,14 @@ library = []
 cosmwasm-schema = { workspace = true }
 cosmwasm-std    = { workspace = true }
 cw2             = { workspace = true }
+cw-controllers  = { workspace = true }
 cw-storage-plus = { workspace = true }
 cw-utils        = { workspace = true }
 schemars        = { workspace = true }
 serde           = { workspace = true }
+sha2            = { workspace = true }
 sylvia          = { workspace = true }
+nft-vault       = { workspace = true }
 thiserror       = { workspace = true }
 uju-cw2-common  = { workspace = true }
+uju-index-query = { workspace = true }

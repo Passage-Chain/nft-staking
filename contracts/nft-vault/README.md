@@ -1,8 +1,8 @@
-# PassageNftVault Smart Contract
+# NftVault Smart Contract
 
 ## Overview
 
-PassageNftVault is a CosmWasm smart contract designed for staking NFTs (Non-Fungible Tokens) and managing associated rewards. It allows users to stake and unstake NFTs, claim rewards, and interact with multiple reward accounts.
+NftVault is a CosmWasm smart contract designed for staking NFTs (Non-Fungible Tokens) and managing associated rewards. It allows users to stake and unstake NFTs, claim rewards, and interact with multiple reward accounts.
 
 ## Key Features
 
@@ -13,7 +13,7 @@ PassageNftVault is a CosmWasm smart contract designed for staking NFTs (Non-Fung
 
 ## Contract Structure
 
-The main struct `PassageNftVault` contains:
+The main struct `NftVault` contains:
 
 - `config`: Stores global configuration settings.
 - `reward_accounts`: Manages multiple reward account addresses.
@@ -101,4 +101,4 @@ The contract emits events for important actions:
 - Contract Name: Defined in `CARGO_PKG_NAME`
 - Contract Version: Defined in `CARGO_PKG_VERSION`
 
-This README provides an overview of the PassageNftVault smart contract, highlighting its main features and functionality. For detailed implementation and usage, refer to the contract source code.
+This README provides an overview of the NftVault smart contract, highlighting its main features and functionality. For detailed implementation and usage, refer to the contract source code.

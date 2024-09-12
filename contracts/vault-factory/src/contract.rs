@@ -2,7 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{to_json_binary, Addr, Response, StdResult, WasmMsg};
 use cw2::set_contract_version;
 use cw_storage_plus::{Item, Map};
-use passage_nft_vault::{
+use nft_vault::{
     contract::sv::InstantiateMsg as NftVaultInstantiateMsg, state::Config as NftVaultConfig,
 };
 use sylvia::types::{ExecCtx, InstantiateCtx, QueryCtx};

@@ -1,8 +1,8 @@
-# PassageStakeRewards Smart Contract
+# StakeRewards Smart Contract
 
 ## Overview
 
-PassageStakeRewards is a CosmWasm smart contract designed to manage external rewards for a staking system. It handles the distribution of rewards to users based on their staked amounts and the total staked amount in the system.
+StakeRewards is a CosmWasm smart contract designed to manage external rewards for a staking system. It handles the distribution of rewards to users based on their staked amounts and the total staked amount in the system.
 
 ## Key Features
 
@@ -13,7 +13,7 @@ PassageStakeRewards is a CosmWasm smart contract designed to manage external rew
 
 ## Contract Structure
 
-The main struct `PassageStakeRewards` contains:
+The main struct `StakeRewards` contains:
 
 - `config`: Stores global configuration settings.
 - `rewards`: Manages cumulative rewards data.
@@ -89,4 +89,4 @@ The contract emits events for important actions:
 - Contract Name: Defined in `CARGO_PKG_NAME`
 - Contract Version: Defined in `CARGO_PKG_VERSION`
 
-This README provides an overview of the PassageStakeRewards smart contract, highlighting its main features and functionality. For detailed implementation and usage, refer to the contract source code.
+This README provides an overview of the StakeRewards smart contract, highlighting its main features and functionality. For detailed implementation and usage, refer to the contract source code.

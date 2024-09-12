@@ -1,0 +1,26 @@
+[package]
+name        = "stake-rewards"
+authors     = ["Tasio Victoria <tasiovictoria@ujulabs.com>"]
+edition     = "2018"
+description = "Distributes staking rewards."
+version     = "0.1.0"
+license     = { workspace = true }
+repository  = { workspace = true }
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+library = []
+
+[dependencies]
+cosmwasm-schema = { workspace = true }
+cosmwasm-std    = { workspace = true }
+cw2             = { workspace = true }
+cw-storage-plus = { workspace = true }
+cw-utils        = { workspace = true }
+schemars        = { workspace = true }
+serde           = { workspace = true }
+sylvia          = { workspace = true }
+thiserror       = { workspace = true }
+uju-cw2-common  = { workspace = true }
