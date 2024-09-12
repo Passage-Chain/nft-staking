@@ -1244,7 +1244,9 @@ checksum = "e36a83ea2b3c704935a01b4642946aadd445cea40b10935e3f8bd8052b8193d6"
 
 [[package]]
 name = "uju-cw2-common"
-version = "0.1.0"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "84275cf92eb429efaa5c3fcd87e73006d2158c447e48f25cdc31b3d86bf29bad"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1256,6 +1258,8 @@ dependencies = [
 [[package]]
 name = "uju-cw2-nft"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75a1134059a88ed1bcec8cd7945f0726046586decf8910ccb33803a4b69b0dba"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -1267,6 +1271,8 @@ dependencies = [
 [[package]]
 name = "uju-index-query"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "049135bb9dbc2bb995d041d19639463a0abd95accecc31738f60e11b106414d8"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",

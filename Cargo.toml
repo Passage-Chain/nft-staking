@@ -34,9 +34,9 @@ serde = { version = "1.0.204", default-features = false, features = ["derive"] }
 sha2 = "0.10"
 sylvia = "1.2.1"
 thiserror = "1.0.63"
-uju-cw2-common = { path = "../uju-cw/packages/uju-cw2-common" }
-uju-cw2-nft = { path = "../uju-cw/packages/uju-cw2-nft" }
-uju-index-query = { path = "../uju-cw/packages/uju-index-query" }
+uju-cw2-common = { version = "0.2.0" }
+uju-cw2-nft = { version = "0.1.0" }
+uju-index-query = { version = "0.1.0" }
 
 passage-nft-vault = { path = "./contracts/passage-nft-vault", features = [
     "library",
