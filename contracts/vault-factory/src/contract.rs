@@ -126,7 +126,7 @@ impl StakeVaultFactory {
             .save(ctx.deps.storage, next_index, &vault_addr)?;
 
         let instantiate_msg = WasmMsg::Instantiate2 {
-            admin: Some(ctx.env.contract.address.to_string()),
+            admin: Some(ctx.info.sender.to_string()),
             code_id: config.vault_code_id,
             label: vault_label,
             msg: to_json_binary(&NftVaultInstantiateMsg {

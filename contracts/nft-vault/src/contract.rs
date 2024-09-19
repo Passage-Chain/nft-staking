@@ -3,7 +3,7 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw_storage_plus::{IndexedMap, Item, Map, MultiIndex, SnapshotItem, Strategy};
-use cw_utils::maybe_addr;
+use cw_utils::{maybe_addr, Expiration};
 use stake_rewards::contract::sv::{
     ExecMsg as PassageRewardsExecuteMsg, InstantiateMsg as StakeRewardsInstantiateMsg,
 };
@@ -199,43 +199,36 @@ impl NftVaultContract {
 
         let mut collection_deltas: HashMap<Addr, i64> = HashMap::new();
 
-        for nft in nfts {
-            let nft_internal = nft.str_to_addr(ctx.deps.api)?;
+        let internal_nfts = nfts
+            .into_iter()
+            .map(|nft| nft.str_to_addr(ctx.deps.api))
+            .collect::<Result<Vec<Nft<cosmwasm_std::Addr>>, ContractError>>()?;
 
+        for nft in internal_nfts {
             ensure!(
-                &config.collections.contains(&nft_internal.collection),
+                &config.collections.contains(&nft.collection),
                 CommonError::InvalidInput("collection not allowed".to_string())
             );
 
             // Update collection count
-            let count = collection_deltas
-                .entry(nft_internal.collection.clone())
-                .or_insert(0);
+            let count = collection_deltas.entry(nft.collection.clone()).or_insert(0);
             *count = count.checked_add(1).unwrap();
 
             // Check owner and transfer NFT to contract
-            only_owner(
-                &ctx.deps.querier,
-                &sender,
-                &nft_internal.collection,
-                &nft_internal.token_id,
-            )?;
+            only_owner(&ctx.deps.querier, &sender, &nft.collection, &nft.token_id)?;
             response = response.add_submessage(transfer_nft(
-                &nft_internal.collection,
-                &nft_internal.token_id,
+                &nft.collection,
+                &nft.token_id,
                 &ctx.env.contract.address,
             ));
 
             // Save staked NFT
             self.users_staked_nfts.save(
                 ctx.deps.storage,
-                (
-                    nft_internal.collection.clone(),
-                    nft_internal.token_id.clone(),
-                ),
+                (nft.collection.clone(), nft.token_id.clone()),
                 &StakedNft {
                     staker: sender.clone(),
-                    nft: nft_internal,
+                    nft: nft,
                 },
             )?;
         }
@@ -282,25 +275,21 @@ impl NftVaultContract {
         let config = self.config.load(ctx.deps.storage)?;
         let reward_accounts = self.reward_accounts.load(ctx.deps.storage)?;
 
-        let mut response = Response::new();
-
         let mut collection_deltas: HashMap<Addr, i64> = HashMap::new();
 
-        for nft in nfts {
-            let nft_internal = nft.str_to_addr(ctx.deps.api)?;
+        let internal_nfts = nfts
+            .into_iter()
+            .map(|nft| nft.str_to_addr(ctx.deps.api))
+            .collect::<Result<Vec<Nft<cosmwasm_std::Addr>>, ContractError>>()?;
 
+        for nft in &internal_nfts {
             // Update collection count
-            let count = collection_deltas
-                .entry(nft_internal.collection.clone())
-                .or_insert(0);
+            let count = collection_deltas.entry(nft.collection.clone()).or_insert(0);
             *count = count.checked_sub(1).unwrap();
 
             let staked_nft = self.users_staked_nfts.may_load(
                 ctx.deps.storage,
-                (
-                    nft_internal.collection.clone(),
-                    nft_internal.token_id.clone(),
-                ),
+                (nft.collection.clone(), nft.token_id.clone()),
             )?;
             ensure!(
                 staked_nft.is_some(),
@@ -311,12 +300,25 @@ impl NftVaultContract {
                 CommonError::Unauthorized("nft not staked by sender".to_string())
             );
 
-            response = response.add_submessage(transfer_nft(
-                &nft_internal.collection,
-                &nft_internal.token_id,
-                &sender,
-            ));
+            // Remove staked NFT
+            self.users_staked_nfts.remove(
+                ctx.deps.storage,
+                (nft.collection.clone(), nft.token_id.clone()),
+            )?;
         }
+
+        // Create a claim for the unstaked nfts
+        self.claims.create_claim(
+            ctx.deps.storage,
+            &sender,
+            internal_nfts,
+            Expiration::AtTime(
+                ctx.env
+                    .block
+                    .time
+                    .plus_seconds(config.unstaking_duration_sec),
+            ),
+        )?;
 
         let UpdateStakeResult {
             user_staked_amount,
@@ -331,7 +333,7 @@ impl NftVaultContract {
             total_staked_amount,
         )?;
 
-        response = response.add_submessages(stake_change_msgs);
+        let response = Response::new().add_submessages(stake_change_msgs);
 
         Ok(response)
     }
@@ -593,8 +595,8 @@ impl NftVaultContract {
         }
 
         Ok(UpdateStakeResult {
-            user_staked_amount: Uint128::from(user_staked_amount_after),
-            total_staked_amount: total_staked_amount_after,
+            user_staked_amount: Uint128::from(user_staked_amount_before),
+            total_staked_amount: total_staked_amount_before,
         })
     }
 }
