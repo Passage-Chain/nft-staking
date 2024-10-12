@@ -41,9 +41,15 @@ impl StakeExternalRewardsContract {
         ctx: InstantiateCtx,
         stake: String,
         denom: String,
+        period_start: Timestamp,
         duration_sec: u64,
     ) -> Result<Response, ContractError> {
         set_contract_version(ctx.deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
+        ensure!(
+            period_start >= ctx.env.block.time,
+            CommonError::InvalidInput("period start must be at least current time".to_string())
+        );
 
         let stake = ctx.deps.api.addr_validate(&stake)?;
 
@@ -59,6 +65,7 @@ impl StakeExternalRewardsContract {
         let config = &Config {
             stake,
             denom,
+            period_start,
             duration_sec,
             period_finish,
             rewards_per_second,

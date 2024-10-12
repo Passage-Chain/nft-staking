@@ -1,6 +1,9 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Env, Timestamp, Uint128, Uint256};
-use std::{cmp::min, convert::TryInto};
+use std::{
+    cmp::{max, min},
+    convert::TryInto,
+};
 
 use crate::error::ContractError;
 
@@ -8,12 +11,17 @@ use crate::error::ContractError;
 pub struct Config {
     pub stake: Addr,
     pub denom: String,
+    pub period_start: Timestamp,
     pub duration_sec: u64,
     pub period_finish: Timestamp,
     pub rewards_per_second: Uint128,
 }
 
 impl Config {
+    pub fn first_reward_time(&self, last_update: Timestamp) -> Timestamp {
+        max(self.period_start, last_update)
+    }
+
     pub fn last_reward_time(&self, env: &Env) -> Timestamp {
         min(env.block.time, self.period_finish)
     }
@@ -35,8 +43,10 @@ impl CumulativeRewards {
         if total_staked == Uint128::zero() {
             return Ok(Uint256::zero());
         }
+
+        let first_reward_time = config.first_reward_time(self.last_update);
         let last_reward_time = config.last_reward_time(env);
-        let time_diff = last_reward_time.minus_seconds(self.last_update.seconds());
+        let time_diff = last_reward_time.minus_seconds(first_reward_time.seconds());
 
         let additional_reward_per_token = config
             .rewards_per_second

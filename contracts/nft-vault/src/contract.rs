@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    attr, ensure, to_json_binary, Addr, Event, Response, StdResult, SubMsg, Uint128, WasmMsg,
+    attr, ensure, to_json_binary, Addr, Event, Response, StdResult, SubMsg, Timestamp, Uint128,
+    WasmMsg,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::{IndexedMap, Item, Map, MultiIndex, SnapshotItem, Strategy};
@@ -125,6 +126,7 @@ impl NftVaultContract {
         ctx: ExecCtx,
         label: String,
         denom: String,
+        period_start: Timestamp,
         duration_sec: u64,
     ) -> Result<Response, ContractError> {
         only_contract_admin(&ctx.deps.querier, &ctx.info, &ctx.env)?;
@@ -155,6 +157,7 @@ impl NftVaultContract {
             msg: to_json_binary(&StakeRewardsInstantiateMsg {
                 stake: ctx.env.contract.address.to_string(),
                 denom,
+                period_start,
                 duration_sec,
             })?,
             funds: ctx.info.funds,
