@@ -1,6 +1,6 @@
 use cosmwasm_std::{
-    attr, ensure, to_json_binary, Addr, Event, Response, StdResult, SubMsg, Timestamp, Uint128,
-    WasmMsg,
+    attr, ensure, to_json_binary, Addr, Env, Event, Response, StdResult, Storage, SubMsg,
+    Timestamp, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw_storage_plus::{IndexedMap, Item, Map, MultiIndex, SnapshotItem, Strategy};
@@ -239,7 +239,13 @@ impl NftVaultContract {
         let UpdateStakeResult {
             user_staked_amount,
             total_staked_amount,
-        } = self.update_stake_amounts(ctx, config, &sender, collection_deltas)?;
+        } = self.update_stake_amounts(
+            ctx.deps.storage,
+            &ctx.env,
+            config,
+            &sender,
+            collection_deltas,
+        )?;
 
         // Setup the stake change messages with the previous staked amount and total staked amount
         let stake_change_msgs = setup_stake_change_messages(
@@ -320,7 +326,13 @@ impl NftVaultContract {
         let UpdateStakeResult {
             user_staked_amount,
             total_staked_amount,
-        } = self.update_stake_amounts(ctx, config, &sender, collection_deltas)?;
+        } = self.update_stake_amounts(
+            ctx.deps.storage,
+            &ctx.env,
+            config,
+            &sender,
+            collection_deltas,
+        )?;
 
         // Setup the stake change messages with the previous staked amount and total staked amount
         let stake_change_msgs = setup_stake_change_messages(
@@ -396,7 +408,13 @@ impl NftVaultContract {
         let UpdateStakeResult {
             user_staked_amount,
             total_staked_amount,
-        } = self.update_stake_amounts(ctx, config, &sender, empty_collection_deltas)?;
+        } = self.update_stake_amounts(
+            ctx.deps.storage,
+            &ctx.env,
+            config,
+            &sender,
+            empty_collection_deltas,
+        )?;
 
         let claim_json = to_json_binary(&PassageRewardsExecuteMsg::ClaimRewards {
             recipient: recipient.to_string(),
@@ -533,7 +551,8 @@ impl NftVaultContract {
 
     pub fn update_stake_amounts(
         &self,
-        ctx: ExecCtx,
+        storage: &mut dyn Storage,
+        env: &Env,
         config: Config<Addr>,
         sender: &Addr,
         collection_deltas: HashMap<Addr, i64>,
@@ -544,7 +563,7 @@ impl NftVaultContract {
         for collection in &config.collections {
             let user_collection_staked_amount_before = self
                 .users_collection_staked_amounts
-                .may_load(ctx.deps.storage, (sender.clone(), collection.clone()))?
+                .may_load(storage, (sender.clone(), collection.clone()))?
                 .unwrap_or_default();
 
             let user_collection_staked_amount_after = user_collection_staked_amount_before
@@ -553,7 +572,7 @@ impl NftVaultContract {
 
             if user_collection_staked_amount_before != user_collection_staked_amount_after {
                 self.users_collection_staked_amounts.save(
-                    ctx.deps.storage,
+                    storage,
                     (sender.clone(), collection.clone()),
                     &user_collection_staked_amount_after,
                 )?;
@@ -578,22 +597,104 @@ impl NftVaultContract {
             CommonError::InternalError("user staked amount after is u64::MAX".to_string())
         );
 
-        let total_staked_amount_before = self.total_staked_amount.load(ctx.deps.storage)?;
+        let total_staked_amount_before = self.total_staked_amount.load(storage)?;
         let total_staked_amount_after = total_staked_amount_before
             .checked_sub(Uint128::from(user_staked_amount_before))?
             .checked_add(Uint128::from(user_staked_amount_after))?;
 
         if total_staked_amount_before != total_staked_amount_after {
-            self.total_staked_amount.save(
-                ctx.deps.storage,
-                &total_staked_amount_after,
-                ctx.env.block.height,
-            )?;
+            self.total_staked_amount
+                .save(storage, &total_staked_amount_after, env.block.height)?;
         }
 
         Ok(UpdateStakeResult {
             user_staked_amount: Uint128::from(user_staked_amount_before),
             total_staked_amount: total_staked_amount_before,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{contract, state::Config};
+
+    use cosmwasm_std::{testing::mock_env, Addr, Uint128};
+    use std::collections::HashMap;
+    use sylvia::{
+        cw_multi_test::{App as CwApp, IntoAddr},
+        multitest::App,
+    };
+
+    #[test]
+    fn test_update_stake_amounts() {
+        let app: App<CwApp> = App::default();
+        let mut app_mut = app.app_mut();
+
+        let user1 = "user1".into_addr();
+
+        let collection1 = "collection1".into_addr();
+        let collection2 = "collection2".into_addr();
+
+        let nft_vault = contract::NftVaultContract::new();
+
+        nft_vault
+            .users_collection_staked_amounts
+            .save(
+                app_mut.storage_mut(),
+                (user1.clone(), collection1.clone()),
+                &4,
+            )
+            .unwrap();
+        nft_vault
+            .users_collection_staked_amounts
+            .save(
+                app_mut.storage_mut(),
+                (user1.clone(), collection2.clone()),
+                &7,
+            )
+            .unwrap();
+        nft_vault
+            .total_staked_amount
+            .save(app_mut.storage_mut(), &Uint128::new(4), 0)
+            .unwrap();
+
+        let mut env = mock_env();
+        env.block.height = 1;
+
+        let config = Config::<Addr> {
+            rewards_code_id: 0,
+            unstaking_duration_sec: 60,
+            collections: vec![collection1.clone(), collection2.clone()],
+        };
+
+        let mut collection_deltas: HashMap<Addr, i64> = HashMap::new();
+        collection_deltas.insert(collection1.clone(), 6);
+        collection_deltas.insert(collection2.clone(), 8);
+
+        let _result = nft_vault.update_stake_amounts(
+            app_mut.storage_mut(),
+            &env,
+            config,
+            &user1,
+            collection_deltas,
+        );
+
+        let user_collection_staked_amount_1 = nft_vault
+            .users_collection_staked_amounts
+            .load(app_mut.storage_mut(), (user1.clone(), collection1.clone()))
+            .unwrap();
+        assert_eq!(user_collection_staked_amount_1, 10);
+
+        let user_collection_staked_amount_2 = nft_vault
+            .users_collection_staked_amounts
+            .load(app_mut.storage_mut(), (user1.clone(), collection2.clone()))
+            .unwrap();
+        assert_eq!(user_collection_staked_amount_2, 15);
+
+        let total_staked_amount = nft_vault
+            .total_staked_amount
+            .load(app_mut.storage_mut())
+            .unwrap();
+        assert_eq!(total_staked_amount, Uint128::new(10));
     }
 }
