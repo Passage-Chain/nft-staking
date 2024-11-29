@@ -4,7 +4,7 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw_storage_plus::{IndexedMap, Item, Map, MultiIndex, SnapshotItem, Strategy};
-use cw_utils::{maybe_addr, Expiration};
+use cw_utils::{maybe_addr, must_pay, nonpayable, Expiration};
 use stake_rewards::contract::sv::{
     ExecMsg as PassageRewardsExecuteMsg, InstantiateMsg as StakeRewardsInstantiateMsg,
 };
@@ -73,6 +73,8 @@ impl NftVaultContract {
         ctx: InstantiateCtx,
         config: Config<String>,
     ) -> Result<Response, ContractError> {
+        nonpayable(&ctx.info)?;
+
         set_contract_version(ctx.deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
         let config = config.str_to_addr(ctx.deps.api)?;
@@ -98,6 +100,8 @@ impl NftVaultContract {
         rewards_code_id: Option<u64>,
         unstaking_duration_sec: Option<u64>,
     ) -> Result<Response, ContractError> {
+        nonpayable(&ctx.info)?;
+
         only_contract_admin(&ctx.deps.querier, &ctx.info, &ctx.env)?;
 
         let mut config = self.config.load(ctx.deps.storage)?;
@@ -129,6 +133,8 @@ impl NftVaultContract {
         period_start: Timestamp,
         duration_sec: u64,
     ) -> Result<Response, ContractError> {
+        must_pay(&ctx.info, &denom)?;
+
         only_contract_admin(&ctx.deps.querier, &ctx.info, &ctx.env)?;
 
         let config = self.config.load(ctx.deps.storage)?;
@@ -175,12 +181,9 @@ impl NftVaultContract {
     }
 
     #[sv::msg(exec)]
-    pub fn stake(
-        &self,
-        ctx: ExecCtx,
-        nfts: Vec<Nft<String>>,
-        recipient: Option<String>,
-    ) -> Result<Response, ContractError> {
+    pub fn stake(&self, ctx: ExecCtx, nfts: Vec<Nft<String>>) -> Result<Response, ContractError> {
+        nonpayable(&ctx.info)?;
+
         ensure!(
             !nfts.is_empty(),
             CommonError::InvalidInput("no nfts to stake".to_string())
@@ -190,10 +193,7 @@ impl NftVaultContract {
             CommonError::InvalidInput("too many nfts to stake".to_string())
         );
 
-        let sender = address_or(
-            &ctx.info.sender,
-            maybe_addr(ctx.deps.api, recipient)?.as_ref(),
-        );
+        let sender = ctx.info.sender.clone();
 
         let config = self.config.load(ctx.deps.storage)?;
         let reward_accounts = self.reward_accounts.load(ctx.deps.storage)?;
@@ -255,12 +255,9 @@ impl NftVaultContract {
     }
 
     #[sv::msg(exec)]
-    pub fn unstake(
-        &self,
-        ctx: ExecCtx,
-        nfts: Vec<Nft<String>>,
-        recipient: Option<String>,
-    ) -> Result<Response, ContractError> {
+    pub fn unstake(&self, ctx: ExecCtx, nfts: Vec<Nft<String>>) -> Result<Response, ContractError> {
+        nonpayable(&ctx.info)?;
+
         ensure!(
             !nfts.is_empty(),
             CommonError::InvalidInput("no nfts to stake".to_string())
@@ -270,10 +267,7 @@ impl NftVaultContract {
             CommonError::InvalidInput("too many nfts to unstake".to_string())
         );
 
-        let sender = address_or(
-            &ctx.info.sender,
-            maybe_addr(ctx.deps.api, recipient)?.as_ref(),
-        );
+        let sender = ctx.info.sender.clone();
 
         let config = self.config.load(ctx.deps.storage)?;
         let reward_accounts = self.reward_accounts.load(ctx.deps.storage)?;
@@ -347,10 +341,10 @@ impl NftVaultContract {
         ctx: ExecCtx,
         recipient: Option<String>,
     ) -> Result<Response, ContractError> {
-        let sender = address_or(
-            &ctx.info.sender,
-            maybe_addr(ctx.deps.api, recipient)?.as_ref(),
-        );
+        nonpayable(&ctx.info)?;
+
+        let sender = ctx.info.sender.clone();
+        let recipient = address_or(&sender, maybe_addr(ctx.deps.api, recipient)?.as_ref());
 
         let claimable_nfts =
             self.claims
@@ -364,7 +358,7 @@ impl NftVaultContract {
 
         for nft in &claimable_nfts {
             response =
-                response.add_submessage(transfer_nft(&nft.collection, &nft.token_id, &sender));
+                response.add_submessage(transfer_nft(&nft.collection, &nft.token_id, &recipient));
         }
 
         response = response.add_event(Event::new("claim-unstaked".to_string()).add_attributes(
@@ -390,10 +384,10 @@ impl NftVaultContract {
         ctx: ExecCtx,
         recipient: Option<String>,
     ) -> Result<Response, ContractError> {
-        let sender = address_or(
-            &ctx.info.sender,
-            maybe_addr(ctx.deps.api, recipient)?.as_ref(),
-        );
+        nonpayable(&ctx.info)?;
+
+        let sender = ctx.info.sender.clone();
+        let recipient = address_or(&sender, maybe_addr(ctx.deps.api, recipient)?.as_ref());
 
         let config = self.config.load(ctx.deps.storage)?;
         let reward_accounts = self.reward_accounts.load(ctx.deps.storage)?;
@@ -405,7 +399,7 @@ impl NftVaultContract {
         } = self.update_stake_amounts(ctx, config, &sender, empty_collection_deltas)?;
 
         let claim_json = to_json_binary(&PassageRewardsExecuteMsg::ClaimRewards {
-            recipient: sender.to_string(),
+            recipient: recipient.to_string(),
             staked_amount: user_staked_amount,
             total_staked: total_staked_amount,
         })?;

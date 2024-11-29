@@ -2,6 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{to_json_binary, Addr, Response, StdResult, WasmMsg};
 use cw2::set_contract_version;
 use cw_storage_plus::{Item, Map};
+use cw_utils::nonpayable;
 use nft_vault::{
     contract::sv::InstantiateMsg as NftVaultInstantiateMsg, state::Config as NftVaultConfig,
 };
@@ -49,7 +50,9 @@ impl StakeVaultFactory {
         ctx: InstantiateCtx,
         vault_code_id: u64,
         rewards_code_id: u64,
-    ) -> StdResult<Response> {
+    ) -> Result<Response, ContractError> {
+        nonpayable(&ctx.info)?;
+
         set_contract_version(ctx.deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
         let config = &Config {
@@ -73,6 +76,7 @@ impl StakeVaultFactory {
         vault_code_id: Option<u64>,
         rewards_code_id: Option<u64>,
     ) -> Result<Response, ContractError> {
+        nonpayable(&ctx.info)?;
         only_contract_admin(&ctx.deps.querier, &ctx.info, &ctx.env)?;
 
         let mut config = self.config.load(ctx.deps.storage)?;
@@ -103,6 +107,7 @@ impl StakeVaultFactory {
         collections: Vec<String>,
         unstaking_duration_sec: u64,
     ) -> Result<Response, ContractError> {
+        nonpayable(&ctx.info)?;
         only_contract_admin(&ctx.deps.querier, &ctx.info, &ctx.env)?;
 
         let config = self.config.load(ctx.deps.storage)?;
@@ -136,7 +141,7 @@ impl StakeVaultFactory {
                     unstaking_duration_sec,
                 },
             })?,
-            funds: ctx.info.funds,
+            funds: vec![],
             salt,
         };
 

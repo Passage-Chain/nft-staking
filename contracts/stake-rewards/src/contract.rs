@@ -3,7 +3,7 @@ use cosmwasm_std::{
 };
 use cw2::set_contract_version;
 use cw_storage_plus::{Item, Map};
-use cw_utils::must_pay;
+use cw_utils::{must_pay, nonpayable};
 use sylvia::types::{ExecCtx, InstantiateCtx, QueryCtx};
 use sylvia::{contract, entry_points};
 use uju_cw2_common::error::CommonError;
@@ -96,6 +96,8 @@ impl StakeExternalRewardsContract {
         staked_amount: Uint128,
         total_staked: Uint128,
     ) -> Result<Response, ContractError> {
+        nonpayable(&ctx.info)?;
+
         let config = self.config.load(ctx.deps.storage)?;
         ensure_eq!(
             config.stake,
@@ -135,6 +137,8 @@ impl StakeExternalRewardsContract {
         staked_amount: Uint128,
         total_staked: Uint128,
     ) -> Result<Response, ContractError> {
+        nonpayable(&ctx.info)?;
+
         let config = self.config.load(ctx.deps.storage)?;
         ensure_eq!(
             config.stake,
