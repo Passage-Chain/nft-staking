@@ -12,7 +12,7 @@ impl<'a> From<ConfigEvent<'a>> for Event {
     fn from(ce: ConfigEvent) -> Self {
         Event::new(ce.ty.to_string()).add_attributes(vec![
             attr("stake", ce.config.stake.to_string()),
-            attr("denom", ce.config.denom.to_string()),
+            attr("reward_asset", ce.config.reward_asset.to_string()),
             attr("period_start", ce.config.period_start.to_string()),
             attr("duration_sec", ce.config.duration_sec.to_string()),
             attr("period_finish", ce.config.period_finish.to_string()),

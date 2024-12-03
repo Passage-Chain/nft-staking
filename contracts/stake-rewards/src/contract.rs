@@ -1,13 +1,16 @@
 use cosmwasm_std::{
-    coin, ensure, ensure_eq, Addr, BankMsg, Response, StdResult, Timestamp, Uint128, Uint256,
+    coin, ensure, ensure_eq, to_json_binary, Addr, BankMsg, CosmosMsg, Response, StdResult,
+    Timestamp, Uint128, Uint256, WasmMsg,
 };
 use cw2::set_contract_version;
+use cw20::{BalanceResponse, Cw20ExecuteMsg, Cw20QueryMsg};
 use cw_storage_plus::{Item, Map};
 use cw_utils::{must_pay, nonpayable};
 use sylvia::types::{ExecCtx, InstantiateCtx, QueryCtx};
 use sylvia::{contract, entry_points};
 use uju_cw2_common::error::CommonError;
 
+use crate::state::RewardAsset;
 use crate::{
     error::ContractError,
     events::{ConfigEvent, UpdateRewardsEvent, UpdateUserRewardsEvent},
@@ -40,7 +43,7 @@ impl StakeExternalRewardsContract {
         &self,
         ctx: InstantiateCtx,
         stake: String,
-        denom: String,
+        reward_asset: RewardAsset,
         period_start: Timestamp,
         duration_sec: u64,
     ) -> Result<Response, ContractError> {
@@ -53,7 +56,23 @@ impl StakeExternalRewardsContract {
 
         let stake = ctx.deps.api.addr_validate(&stake)?;
 
-        let fund_amount = must_pay(&ctx.info, &denom)?;
+        let fund_amount = match &reward_asset {
+            RewardAsset::Native(denom) => must_pay(&ctx.info, &denom)?,
+            RewardAsset::Cw20(cw20) => {
+                let balance_response: BalanceResponse = ctx.deps.querier.query_wasm_smart(
+                    cw20.to_string(),
+                    &Cw20QueryMsg::Balance {
+                        address: ctx.env.contract.address.to_string(),
+                    },
+                )?;
+                balance_response.balance
+            }
+        };
+        ensure!(
+            fund_amount > Uint128::zero(),
+            CommonError::InvalidInput("fund amount must be greater than zero".to_string())
+        );
+
         let period_finish = Timestamp::from_seconds(ctx.env.block.time.seconds() + duration_sec);
         let rewards_per_second = fund_amount.checked_div(Uint128::from(duration_sec))?;
 
@@ -64,7 +83,7 @@ impl StakeExternalRewardsContract {
 
         let config = &Config {
             stake,
-            denom,
+            reward_asset,
             period_start,
             duration_sec,
             period_finish,
@@ -158,13 +177,29 @@ impl StakeExternalRewardsContract {
         let mut next_user_reward =
             current_user_reward.get_next_user_reward(rewards.rewards_per_token, staked_amount)?;
 
-        let send_msg = if next_user_reward.pending_rewards > Uint128::zero() {
+        let send_msg: Option<CosmosMsg> = if next_user_reward.pending_rewards > Uint128::zero() {
             let claim_amount = next_user_reward.claim_rewards()?;
 
-            Some(BankMsg::Send {
-                to_address: recipient_addr.to_string(),
-                amount: vec![coin(claim_amount.u128(), config.denom)],
-            })
+            match &config.reward_asset {
+                RewardAsset::Native(denom) => Some(
+                    BankMsg::Send {
+                        to_address: recipient_addr.to_string(),
+                        amount: vec![coin(claim_amount.u128(), denom)],
+                    }
+                    .into(),
+                ),
+                RewardAsset::Cw20(cw20) => Some(
+                    WasmMsg::Execute {
+                        contract_addr: cw20.to_string(),
+                        msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
+                            recipient,
+                            amount: claim_amount,
+                        })?,
+                        funds: vec![],
+                    }
+                    .into(),
+                ),
+            }
         } else {
             None
         };

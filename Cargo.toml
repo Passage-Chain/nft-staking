@@ -18,6 +18,7 @@ cosmwasm-std = { version = "2.1.1", features = [
     "cosmwasm_1_2",
 ] }
 cw2 = "2.0.0"
+cw20 = "2.0.0"
 cw721 = "0.18.0"
 cw-address-like = "2.0.0"
 cw-controllers = "2.0.0"

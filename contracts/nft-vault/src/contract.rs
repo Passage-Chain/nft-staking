@@ -3,11 +3,13 @@ use cosmwasm_std::{
     Timestamp, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
+use cw20::{BalanceResponse, Cw20ExecuteMsg, Cw20QueryMsg};
 use cw_storage_plus::{IndexedMap, Item, Map, MultiIndex, SnapshotItem, Strategy};
 use cw_utils::{maybe_addr, must_pay, nonpayable, Expiration};
 use stake_rewards::contract::sv::{
     ExecMsg as PassageRewardsExecuteMsg, InstantiateMsg as StakeRewardsInstantiateMsg,
 };
+use stake_rewards::state::RewardAsset;
 use std::cmp::min;
 use std::collections::HashMap;
 use sylvia::types::{ExecCtx, InstantiateCtx, QueryCtx};
@@ -129,13 +131,24 @@ impl NftVaultContract {
         &self,
         ctx: ExecCtx,
         label: String,
-        denom: String,
+        reward_asset: RewardAsset,
         period_start: Timestamp,
         duration_sec: u64,
     ) -> Result<Response, ContractError> {
-        must_pay(&ctx.info, &denom)?;
-
         only_contract_admin(&ctx.deps.querier, &ctx.info, &ctx.env)?;
+
+        let fund_amount = match &reward_asset {
+            RewardAsset::Native(denom) => must_pay(&ctx.info, &denom)?,
+            RewardAsset::Cw20(cw20) => {
+                let balance_response: BalanceResponse = ctx.deps.querier.query_wasm_smart(
+                    cw20.to_string(),
+                    &Cw20QueryMsg::Balance {
+                        address: ctx.env.contract.address.to_string(),
+                    },
+                )?;
+                balance_response.balance
+            }
+        };
 
         let config = self.config.load(ctx.deps.storage)?;
         let mut reward_accounts = self.reward_accounts.load(ctx.deps.storage)?;
@@ -162,7 +175,7 @@ impl NftVaultContract {
             label: label.to_string(),
             msg: to_json_binary(&StakeRewardsInstantiateMsg {
                 stake: ctx.env.contract.address.to_string(),
-                denom,
+                reward_asset: reward_asset.clone(),
                 period_start,
                 duration_sec,
             })?,
@@ -170,12 +183,23 @@ impl NftVaultContract {
             salt,
         };
 
-        let response = Response::new()
-            .add_event(RewardAccountEvent {
-                ty: "create-reward-account",
-                address: &reward_contract_addr.to_string(),
-            })
-            .add_message(instantiate_msg);
+        let mut response = Response::new().add_event(RewardAccountEvent {
+            ty: "create-reward-account",
+            address: &reward_contract_addr.to_string(),
+        });
+
+        if let RewardAsset::Cw20(cw20) = &reward_asset {
+            response = response.add_message(WasmMsg::Execute {
+                contract_addr: cw20.to_string(),
+                msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
+                    recipient: reward_contract_addr.to_string(),
+                    amount: fund_amount,
+                })?,
+                funds: vec![],
+            });
+        }
+
+        response = response.add_message(instantiate_msg);
 
         Ok(response)
     }

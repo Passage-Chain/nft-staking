@@ -3,14 +3,30 @@ use cosmwasm_std::{Addr, Env, Timestamp, Uint128, Uint256};
 use std::{
     cmp::{max, min},
     convert::TryInto,
+    fmt::Display,
 };
 
 use crate::error::ContractError;
 
 #[cw_serde]
+pub enum RewardAsset {
+    Native(String),
+    Cw20(Addr),
+}
+
+impl Display for RewardAsset {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RewardAsset::Native(denom) => write!(f, "{}", denom),
+            RewardAsset::Cw20(cw20) => write!(f, "{}", cw20),
+        }
+    }
+}
+
+#[cw_serde]
 pub struct Config {
     pub stake: Addr,
-    pub denom: String,
+    pub reward_asset: RewardAsset,
     pub period_start: Timestamp,
     pub duration_sec: u64,
     pub period_finish: Timestamp,
