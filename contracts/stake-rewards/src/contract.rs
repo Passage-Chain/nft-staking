@@ -241,6 +241,30 @@ impl StakeExternalRewardsContract {
             .may_load(ctx.deps.storage, ctx.deps.api.addr_validate(&address)?)
     }
 
+    #[sv::msg(query)]
+    pub fn latest_user_reward(
+        &self,
+        ctx: QueryCtx,
+        address: String,
+        staked_amount: Uint128,
+        total_staked: Uint128,
+    ) -> Result<Option<UserReward>, ContractError> {
+        let config = self.config.load(ctx.deps.storage)?;
+
+        let rewards = self.rewards.load(ctx.deps.storage)?;
+        let rewards_per_token = rewards.calc_rewards_per_token(&ctx.env, &config, total_staked)?;
+
+        let current_user_reward = self
+            .user_rewards
+            .may_load(ctx.deps.storage, ctx.deps.api.addr_validate(&address)?)?
+            .unwrap_or_default();
+
+        let next_user_reward =
+            current_user_reward.get_next_user_reward(rewards_per_token, staked_amount)?;
+
+        Ok(Some(next_user_reward))
+    }
+
     pub fn update_rewards(
         &self,
         ctx: &mut ExecCtx,
