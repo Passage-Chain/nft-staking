@@ -6,8 +6,10 @@ use cw_utils::nonpayable;
 use nft_vault::{
     contract::sv::InstantiateMsg as NftVaultInstantiateMsg, state::Config as NftVaultConfig,
 };
-use sylvia::types::{ExecCtx, InstantiateCtx, QueryCtx};
-use sylvia::{contract, entry_points};
+use sylvia::{
+    contract,
+    types::{ExecCtx, InstantiateCtx, QueryCtx},
+};
 use uju_cw2_common::{
     admin::only_contract_admin,
     instantiate::{generate_instantiate_2_addr, generate_salt},
@@ -33,7 +35,10 @@ pub struct StakeVaultFactory {
     pub vaults: Map<u64, Addr>,
 }
 
-#[entry_points]
+#[cfg(not(feature = "library"))]
+use sylvia::entry_points;
+
+#[cfg_attr(not(feature = "library"), entry_points)]
 #[contract]
 #[sv::error(ContractError)]
 impl StakeVaultFactory {

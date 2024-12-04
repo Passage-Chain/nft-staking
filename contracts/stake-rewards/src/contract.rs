@@ -6,8 +6,10 @@ use cw2::set_contract_version;
 use cw20::{BalanceResponse, Cw20ExecuteMsg, Cw20QueryMsg};
 use cw_storage_plus::{Item, Map};
 use cw_utils::{must_pay, nonpayable};
-use sylvia::types::{ExecCtx, InstantiateCtx, QueryCtx};
-use sylvia::{contract, entry_points};
+use sylvia::{
+    contract,
+    types::{ExecCtx, InstantiateCtx, QueryCtx},
+};
 use uju_cw2_common::error::CommonError;
 
 use crate::state::RewardAsset;
@@ -26,7 +28,10 @@ pub struct StakeExternalRewardsContract {
     pub user_rewards: Map<Addr, UserReward>,
 }
 
-#[entry_points]
+#[cfg(not(feature = "library"))]
+use sylvia::entry_points;
+
+#[cfg_attr(not(feature = "library"), entry_points)]
 #[contract]
 #[sv::error(ContractError)]
 impl StakeExternalRewardsContract {

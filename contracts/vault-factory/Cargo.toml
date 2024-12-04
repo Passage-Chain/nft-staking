@@ -24,7 +24,7 @@ schemars        = { workspace = true }
 serde           = { workspace = true }
 sha2            = { workspace = true }
 sylvia          = { workspace = true }
-nft-vault       = { workspace = true }
+nft-vault       = { workspace = true, features = ["library"] }
 thiserror       = { workspace = true }
 uju-cw2-common  = { workspace = true }
 uju-index-query = { workspace = true }

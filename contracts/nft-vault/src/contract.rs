@@ -12,8 +12,10 @@ use stake_rewards::contract::sv::{
 use stake_rewards::state::RewardAsset;
 use std::cmp::min;
 use std::collections::HashMap;
-use sylvia::types::{ExecCtx, InstantiateCtx, QueryCtx};
-use sylvia::{contract, entry_points};
+use sylvia::{
+    contract,
+    types::{ExecCtx, InstantiateCtx, QueryCtx},
+};
 use uju_cw2_common::admin::only_contract_admin;
 use uju_cw2_common::{
     address::address_or,
@@ -46,7 +48,10 @@ pub struct NftVaultContract {
     pub claims: Claims,
 }
 
-#[entry_points]
+#[cfg(not(feature = "library"))]
+use sylvia::entry_points;
+
+#[cfg_attr(not(feature = "library"), entry_points)]
 #[contract]
 #[sv::error(ContractError)]
 impl NftVaultContract {
