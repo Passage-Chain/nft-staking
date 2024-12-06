@@ -57,11 +57,16 @@ impl CumulativeRewards {
         total_staked: Uint128,
     ) -> Result<Uint256, ContractError> {
         if total_staked == Uint128::zero() {
-            return Ok(Uint256::zero());
+            return Ok(self.rewards_per_token);
         }
 
         let first_reward_time = config.first_reward_time(self.last_update);
         let last_reward_time = config.last_reward_time(env);
+
+        if last_reward_time.seconds() <= first_reward_time.seconds() {
+            return Ok(self.rewards_per_token);
+        }
+
         let time_diff = last_reward_time.minus_seconds(first_reward_time.seconds());
 
         let additional_reward_per_token = config
