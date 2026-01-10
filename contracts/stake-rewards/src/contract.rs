@@ -78,7 +78,7 @@ impl StakeExternalRewardsContract {
             CommonError::InvalidInput("fund amount must be greater than zero".to_string())
         );
 
-        let period_finish = Timestamp::from_seconds(ctx.env.block.time.seconds() + duration_sec);
+        let period_finish = Timestamp::from_seconds(period_start.seconds() + duration_sec);
         let rewards_per_second = fund_amount.checked_div(Uint128::from(duration_sec))?;
 
         ensure!(
